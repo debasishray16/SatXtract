@@ -151,3 +151,98 @@ def normalize(band,stretch = True):
         normalized_band = normalized_band * 255
     return normalized_band
 
+
+'''
+This function adjusts the brightness of a raster band (image array) using a linear transformation.
+-> alpha controls contrast (higher values make the image sharper).
+-> beta controls brightness (positive values brighten the image, negative values darken it).
+'''
+def brighten(band,alpha,beta=0):
+    return np.clip(alpha*band+beta,0,255)
+
+
+'''
+This function applies gamma correction to a raster band (image array) using the formula
+-> output = band **(1/gamma)
+gamma adjusts the brightness/contrast non-linearly.
+gamma > 1: Darkens the image.
+gamma < 1: Brightens the image.
+
+'''
+def gamma_corr(band,gamma):
+    return np.power(band, 1/gamma)
+
+
+
+
+'''
+This function creates an RGB composite image from three raster bands (Red, Green, and Blue) while applying:
+-> Gamma correction
+-> Brightness/contrast adjustment
+-> Normalization
+
+It then saves the processed RGB image as a GeoTIFF file.
+
+band_red_path, band_green_path, band_blue_path → File paths of Red, Green, and Blue bands (GeoTIFF files).
+target_path → Path to save the RGB composite image.
+stretch=True → Apply normalization (0-255 scaling).
+gamma=1 → Gamma correction factor (<1 brightens, >1 darkens).
+alpha=1, beta=0 → Controls brightness & contrast.
+driver="GTiff" → Output format (GeoTIFF).
+'''
+def create_rgb_composite(band_red_path: Path, band_green_path:Path, band_blue_path:Path, target_path: Path, stretch: bool =True, gamma: float = 1, alpha: float =1, beta: float =0, driver: str = "GTiff",) -> tuple[np.ndarray,str]:
+    
+    # Opens each raster file and reads Band 1 (first layer).
+    with rasterio. open(band_blue_path, driver=driver) as src:
+        band_blue = src.read(1)
+    with rasterio.open(band_green_path, driver=driver) as src:
+        band_green = src.read(1)
+    with rasterio.open(band_red_path, driver=driver) as src:
+        band_red = src.read(1)
+        meta = src.meta
+    
+    
+    # Apply gamma correction (default: gamma=1 means no change)
+    red_g = gamma_corr(band_red, gamma=gamma)
+    blue_g = gamma_corr(band_blue, gamma=gamma)
+    green_g = gamma_corr(band_green, gamma=gamma)
+    
+    
+    # Apply brightness correction (default: alpha=1 means no change)
+    red_gb = brighten(red_g, alpha=alpha, beta=beta)
+    blue_gb = brighten(blue_g, alpha=alpha, beta=beta)
+    green_gb = brighten(green_g, alpha=alpha, beta=beta)
+    
+    
+    # Normalize the bands to the range 0-1
+    red_gbn = normalize(red_gb, stretch=stretch)
+    blue_gbn = normalize(blue_gb, stretch=stretch)
+    green_gbn = normalize(green_gb, stretch=stretch)
+    
+    
+    # After gamma , brightness and normalization of image
+    # Stack RGB Bands Together
+    rgb_composite_gbn = np.dstack((red_gbn, blue_gbn, green_gbn))
+    
+    # Prepare Output Directory
+    target_path.parent.mkdir(parents= True, exist_ok=True)
+    
+    # Modifies metadata to store a 3-band (RGB) image with 8-bit pixel values (uint8).
+    meta.update(
+        {
+            "count":3, # 3 bands
+            "dtype":"uint8",
+            "nodata":0,
+        }
+    )
+    
+    # Save the RGB composite to a new GeoTiff file
+    with rasterio.open(target_path, "w", height=band_red.shape[0],width = band_red.shape[1],) as dst:
+        # Move channel information to first axis
+        out_array =np.moveaxis(rgb_composite_gbn, source=2, destination=0)
+        dst.write(out_array.astype("unit8"))
+    
+    if (target_path.is_file()):
+        print(f"RGB Composite saved to {target_path}")
+    
+    return rgb_composite_gbn.astype("unit8"),target_path

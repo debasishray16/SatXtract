@@ -246,3 +246,131 @@ def create_rgb_composite(band_red_path: Path, band_green_path:Path, band_blue_pa
         print(f"RGB Composite saved to {target_path}")
     
     return rgb_composite_gbn.astype("unit8"),target_path
+
+
+
+'''
+This function creates an RGB composite image from three raster bands (Red, Green, and Blue) with optional:
+-> Gamma correction
+-> Brightness/contrast adjustment
+-> Normalization
+-> Saving in a specified raster format (driver_out)
+This will generate an enhanced RGB image from Sentinel-2 bands.
+'''
+def create_rgb_composite2(band_red_path: Path, band_green_path: Path, band_blue_path: Path, target_path: Path, normal:bool =True, stretch: bool = True, gamma: float = None, alpha: float = None, beta: float = 0, driver_in: str= "GTiff",driver_out: str= "GTiff",):
+    
+    # Open the raster bands using context manager
+    band_red = rasterio.open(band_red_path, driver=driver_in)
+    band_red_read  = band_red.read(1)
+    
+    band_green = rasterio.open(band_green_path, driver=driver_in)
+    band_green_read  = band_green.read(1)
+    
+    band_blue = rasterio.open(band_blue_path, driver=driver_in)
+    band_blue_read  = band_blue.read(1)
+    
+    # Apply gamma correction if provided
+    if gamma is not None:
+        
+        band_red_read = gamma_corr(band_red_read, gamma=gamma)
+        band_green_read = gamma_corr(band_green_read, gamma=gamma)
+        band_blue_read = gamma_corr(band_blue_read, gamma=gamma)
+    
+    # Apply brightness/contrast adjustment if provided
+    if alpha is not None:
+        
+        band_red_read = brighten(band_red_read, alpha=alpha, beta=beta)
+        band_green_read = brighten(band_green_read, alpha=alpha, beta=beta)
+        band_blue_read = brighten(band_blue_read, alpha=alpha, beta=beta)
+    
+    # Normalize bands if required
+    if normal:
+        
+        band_red_read = normalize(band_red_read, stretch=stretch)
+        band_green_read = normalize(band_green_read, stretch=stretch)
+        band_blue_read = normalize(band_blue_read, stretch=stretch)
+        
+    
+    # Ensure target directory exists
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Update metadata for RGB composite
+    rgb = rasterio.open(target_path, "w",driver=driver_out, width = band_red.width, height = band_red.height, count=3 , crs=band_red.crs, transform = band_red.transform, dtype = "uint16",)
+    
+    rgb.write_band(band_red_read,1)
+    rgb.write_band(band_green_read,2)
+    rgb.write_band(band_blue_read,3)
+    rgb.close()
+    
+    if target_path.is_file():
+        print(f"RGB Composite saved to {target_path}")
+    
+    return target_path
+
+
+'''
+Your resample_image function is designed to resample a raster image to a specified ground resolution (in meters).
+Using Bilinear interpolation method.
+'''
+def resample_image(input_file, output_file, target_resolution):
+    
+    with rasterio.open(input_file) as dataset:
+        current_resolution = dataset.res[0]
+        resampling_factor = current_resolution / target_resolution
+        
+        width = int(dataset.width / resampling_factor)
+        height =  int(dataset.height / resampling_factor)
+        
+        # Update metadata for new resolution
+        profile = dataset.profile
+        profile.update(width=width, height=height, transform = dataset.transform * dataset.transform.scale(resampling_factor,resampling_factor),)
+        
+        with rasterio.open(output_file, "w" ,**profile) as dst:
+            for i in range(1, dataset.count + 1):
+                # This downsamples/upsamples the raster to the specified resolution using bilinear interpolation.
+                data = dataset.read(i, out_shape=(height,width), resampling=Resampling.bilinear)
+                dst.write(data,i)
+    
+    return output_file
+
+
+
+
+'''
+Your function calc_lst is computing Land Surface Temperature (LST) from Landsat 8 bands 4, 5, and 10 using the single_window function from pylandtemp.
+The single_window algorithm is a Land Surface Temperature (LST) retrieval method used for Landsat 8 data. It is implemented in the pylandtemp library 
+and is useful for computing LST from thermal infrared bands (TIR).
+'''
+def calc_lst(band_4_path: Path, band_5_path: Path, band_10_path: Path, target_path: Path) -> np.ndarray:
+    
+    with rasterio.open(band_4_path) as src:
+        band_4 =  src.read(1)
+    with rasterio.open(band_5_path) as src:
+        band_5 =  src.read(1)
+    with rasterio.open(band_10_path) as src:
+        band_10 =  src.read(1)
+        
+        
+        out_meta = src.meta.copy()
+    
+    # Compute Land Surface Temperature (LST)
+    lst_image_array = single_window(band_10,band_4,band_5, unit="celsius")
+    
+    # For some reason, the values are in Kelvin, so we need to convert them to Celsius
+    lst_image_array = lst_image_array - 273.15
+    
+    out_meta.update(
+        {
+            "height": lst_image_array.shape[0],
+            "width": lst_image_array.shape[1],
+            "transform": src.transform,
+            "dtype": lst_image_array.dtype,
+        }
+    )
+    
+    # Save LST as GeoTIFF
+    with rasterio.open(target_path, "w", **out_meta) as dst:
+        dst.write(lst_image_array, 1)
+    print("Saved Land Surface Temperature (LST) to", target_path)
+
+    return lst_image_array

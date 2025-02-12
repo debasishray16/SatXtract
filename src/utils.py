@@ -15,6 +15,9 @@ from pylandtemp import emissivity , ndvi, single_window
 from rasterio.warp import Resampling, calculate_default_transform , reproject
 from rasterio.windows import get_data_window , shape, transform
 from shapely.geometry import shape
+import rasterio
+import numpy as np
+from rasterio.crs import CRS
 
 
 # def clip_to_geojson(band_path, geojson_path, target_dir = None):
@@ -374,3 +377,320 @@ def calc_lst(band_4_path: Path, band_5_path: Path, band_10_path: Path, target_pa
     print("Saved Land Surface Temperature (LST) to", target_path)
 
     return lst_image_array
+
+
+
+
+'''
+calc_ndvi function computes the Normalized Difference Vegetation Index (NDVI) 
+using Landsat 8 Bands 4 (Red) and 5 (NIR) and saves the result as a GeoTIFF.
+'''
+def calc_ndvi(band_4_path: Path, band_5_path: Path, target_path: Path) -> np.ndarray:
+    
+    with rasterio.open(band_4_path) as src:
+        band_4 = src.read(1)
+    with rasterio.open(band_5_path) as src:
+        band_5 = src.read(1)
+        
+        out_meta = src.meta.copy()
+    
+    mask = band_4 == 0
+    ndvi_image_array = ndvi(band_5,band_4,mask=mask)
+    
+    out_meta.update(
+        {
+            "height": ndvi_image_array.shape[0],
+            "width": ndvi_image_array.shape[1],
+            "transform": src.transform,
+            "dtype": ndvi_image_array.dtype,
+        }
+    )
+    
+    # Save NDVI as GeoTIFF
+    with rasterio.open(target_path, "w", **out_meta) as dst:
+        dst.write(ndvi_image_array, 1)
+    print("Save NVDI to ", target_path)
+    
+    return ndvi_image_array
+
+
+'''
+calc_emissivity function calculates land surface emissivity using NDVI and an emissivity estimation method (xiaolei)
+'''
+def calc_emissivity(band_4_path: Path, band_5_path: Path, target_path: Path) -> np.ndarray:
+    
+    with rasterio.open(band_4_path) as src:
+        band_4 = src.read(1)
+    with rasterio.open(band_5_path) as src:
+        band_5 = src.read(1)
+        
+        out_meta = src.meta.copy()
+    
+    mask = band_4 == 0
+    
+    ndvi_image_array = ndvi(band_5, band_4, mask=mask)
+
+    emissivity_10_array, emissivity_11_array = emissivity(
+        ndvi_image_array, emissivity_method="xiaolei", landsat_band_4=band_4
+    )
+    
+    
+    out_meta.update(
+        {
+            "height": emissivity_10_array.shape[0],
+            "width": emissivity_10_array.shape[1],
+            "transform": src.transform,
+            "dtype": emissivity_10_array.dtype,
+        }
+    )
+    
+    # Save emissivity as GeoTIFF
+    with rasterio.open(target_path, "w", **out_meta) as dst:
+        dst.write(emissivity_10_array, 1)
+
+    print("Saved Emissivity to", target_path)
+
+    return emissivity_10_array
+
+
+
+'''
+This function exagerrates the value of an array.
+The exaggerate function enhances variations in temperature data, specifically emphasizing hotter-than-average regions.
+'''
+def exaggerate(input_array: np.ndarray, factor: float =2) -> np.ndarray:
+    
+    # Calculate the mean temperature
+    mean_temp = np.mean(input_array)
+
+    valid_mask = (input_array != 0) & (input_array > mean_temp)
+
+    deviation = np.where(valid_mask, input_array - mean_temp, 0)
+
+    # Calculate the deviation from the mean
+    # deviation = input_array - mean_temp
+
+    # Apply an exaggeration function to the deviation
+    exaggerated_deviation = np.power(deviation, factor)
+
+    # Add the exaggerated deviation back to the mean temperature
+    exaggerated_temperature = mean_temp + exaggerated_deviation
+
+    return exaggerated_temperature
+
+
+'''
+Your reproject_geotiff function aims to reproject a GeoTIFF raster to a new coordinate reference system (CRS)
+Reproject a GeoTIFF raster to a different coordinate reference system (CRS).
+    
+    Parameters:
+    - src_path (str or Path): Path to the source GeoTIFF file.
+    - target_path (str or Path): Path to save the reprojected GeoTIFF.
+    - target_crs (int or str): EPSG code or Proj string for the target CRS.
+
+    Returns:
+    - numpy.ndarray: The reprojected image array.
+'''
+def reproject_geotiff(src_path, target_path,target_crs):
+    
+    with rasterio.open(src_path) as src:
+        img = src.read().astype(np.float32)
+        
+        # Set the nodata values to NaN
+        img[img == src.nodata] = np.nan
+        
+        # Define target CRS (e.g., WGS84)
+        target_crs = rasterio.crs.CRS.from_epsg(target_crs)
+
+        # Calculate the default transform for the reprojected image
+        transform, width, height = rasterio.warp.calculate_default_transform(
+            src.crs, target_crs, src.width, src.height, *src.bounds
+        )
+
+        # Create an array to hold the reprojected image
+        reprojected_img = np.zeros((img.shape[0], height, width), dtype=img.dtype)
+        
+        # Reproject the image to match the transformed bounds
+        reproject(
+            src.read(),
+            reprojected_img,
+            src_transform=src.transform,
+            src_crs=src.crs,
+            dst_transform=transform,
+            dst_crs=target_crs,
+        )
+        
+        # Update the metadata for the reprojected image
+        reprojected_meta = src.meta.copy()
+        reprojected_meta.update(
+            {
+                "crs": target_crs,
+                "transform": transform,
+                "width": width,
+                "height": height,
+            }
+        )
+
+        # Set the nodata values to NaN
+        reprojected_img[reprojected_img == src.nodata] = np.nan
+
+        # Write the reprojected image to a new GeoTIFF file
+        with rasterio.open(target_path, "w", **reprojected_meta) as dst:
+            dst.write(reprojected_img)
+
+        return dst, reprojected_img
+    
+    
+    
+
+'''
+The function maps raster values to an RGBA color representation and saves the result as:
+
+A PNG image (for visualization).
+A GeoTIFF file (with 4 bands for Red, Green, Blue, and Alpha transparency).
+A JSON file (containing the spatial bounds of the raster).
+It helps in visualizing raster data (e.g., temperature, elevation, NDVI, etc.) by applying a colormap (such as "RdBu_r" for a red-blue gradient).
+'''
+def create_rgba_color_image(src_path: Path, target_path: Path, colormap="RdBu_r"):
+    
+    '''
+    Function to map raster values to rgba.
+
+    Parameters
+    ----------
+    src_path : Path
+        Path to the source raster file. Assumes that the raster has a single band.
+    target_path : Path
+        Path to the target raster file. Raster will have 4 bands.
+    '''
+    
+    with rasterio.open(str(src_path)) as src:
+        band = src.read(1)
+        bounds = src.bounds
+        meta = src.meta.copy()
+
+    # Normalize band values to range [0, 1]
+    band_norm = (band - np.nanmin(band)) / (np.nanmax(band) - np.nanmin(band))
+
+    # Get minimum and maximum, ignoring NaNs
+    vmin = np.nanmin(band_norm)
+    vmax = np.nanmax(band_norm)
+
+    # For values less than vmin, assign 0
+    band_norm[band_norm < vmin] = 0
+
+    # Linear stretch normalization to range [0, 1]
+    band_norm = (band_norm - vmin) / (vmax - vmin)
+
+    # Create a colormap
+    cmap = plt.get_cmap(colormap)
+    norm = colors.Normalize(vmin=0, vmax=1)
+
+    # Apply the colormap to the normalized band values
+    image = cmap(norm(band_norm))
+
+    # Convert the float values in [0,1] to uint8 values in [0,255]
+    image = (image * 255).astype(np.uint8)
+
+    # Create paths for the PNG and JSON files
+    png_image_path = target_path.parent / (target_path.stem + ".png")
+    json_path = target_path.parent / (target_path.stem + "_bounds.json")
+
+    # Save the image as a PNG
+    plt.imsave(png_image_path, image)
+
+    # Save the bounds in a JSON file
+    bbox = [
+        [bounds.bottom, bounds.left],
+        [bounds.top, bounds.right],
+    ]
+    with open(json_path, "w", encoding="utf-8") as file:
+        json.dump(bbox, file)
+
+    # Update metadata
+    meta.update(count=4, dtype=rasterio.uint8)
+
+    # Write the reprojected image to a new GeoTIFF file
+    with rasterio.open(target_path, "w", **meta) as dst:
+        # Move channel information to first axis
+        img_rio = np.moveaxis(image, source=2, destination=0)
+        dst.write(img_rio.astype(rasterio.uint8))
+
+    return dst, image
+
+
+
+'''
+The function removes the NoData (empty) regions from a raster by clipping it to the data window (the smallest bounding box that contains actual data). 
+This reduces file size and improves efficiency when processing raster datasets.
+'''
+def clip_to_remove_nodata(input_path: Path, output_path: Path = None) -> None:
+    '''
+    Clip a raster to the data window to remove nodata values.
+    TODO: Doesn't clip. https://gis.stackexchange.com/a/428982
+    '''
+    
+    if output_path is None:
+        output_path = Path(
+            input_path.parent, input_path.stem + "_clipped" + input_path.suffix
+        )
+
+    with rasterio.open(input_path) as src:
+        profile = src.profile.copy()
+        data_window = get_data_window(src.read(masked=True))
+        data_transform = transform(data_window, src.transform)
+        profile.update(
+            transform=data_transform,
+            height=data_window.height,
+            width=data_window.width,
+        )
+
+        data = src.read(window=data_window)
+
+    with rasterio.open(output_path, "w", **profile) as dst:
+        dst.write(data)
+
+    # Save the clipped raster to a new file.
+    if output_path.is_file():
+        print(f"Clipped file saved to {output_path}")
+
+
+'''
+This function prepares and visualizes segmented predictions
+by applying color mapping to different classes in a prediction mask 
+and overlaying it onto the original image.
+
+Color Mapping: Assigns RGBA colors to different classification labels (e.g., buildings, trees, water, roads).
+Create a Colored Mask: Converts the prediction array into an RGBA image based on the defined color mapping.
+Generate an Overlay Image: Merges the original image with the colored mask for better visualization.
+
+'''
+def prepare_split_image(img: np.ndarray, prediction: np.ndarray) -> tuple[Image.Image, Image.Image, Image.Image]:
+    '''
+    Prepare images for display in a split view.
+    '''
+
+    # Map the values from 0-4 to RGBA colors (you can choose any colors)
+    colors = {
+        0: (0, 0, 0, 0),  # Unclassified (transparent)
+        1: (239, 131, 84, 200),  # Buildings
+        2: (22, 219, 147, 200),  # Trees
+        3: (38, 103, 255, 200),  # Water
+        4: (224, 202, 60, 200),  # Roads
+    }
+
+    # Prepare an empty array for the colored image (height x width x 4 for RGBA)
+    colored_image = np.zeros((*prediction.shape, 4), dtype=np.uint8)
+
+    # Apply colors
+    for val, color in colors.items():
+        colored_image[prediction == val] = color
+
+    # Convert numpy array to PIL image
+    original_img = Image.fromarray(img).convert("RGBA")
+    segmented_img = Image.fromarray(colored_image)
+
+    # Create an overlay image
+    overlay = Image.alpha_composite(original_img, segmented_img)
+
+    return original_img, segmented_img, overlay

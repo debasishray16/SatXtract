@@ -38,7 +38,8 @@ from shapely.geometry import shape
 # GeoJSON coordinate reference system (CRS) , Area of Interest (AOI)
 
 '''
-The function clip_to_json is designed to clip (crop) a raster image (e.g., a satellite image) to a given GeoJSON boundary (e.g., a city's boundary or a region of interest). 
+The function clip_to_json is designed to clip (crop) a raster image (e.g., a satellite image) 
+to a given GeoJSON boundary (e.g., a city's boundary or a region of interest). 
 It saves the clipped raster and returns the new file path.
 '''
 def clip_to_json(band_path, geojson_path, target_dir = None):
@@ -77,3 +78,76 @@ def clip_to_json(band_path, geojson_path, target_dir = None):
         
     print(f"Saved clipped file to {file_path_new}")
     return str(file_path_new)
+
+
+
+'''
+This function clips a JP2 (JPEG 2000) raster file (e.g., Sentinel-2 satellite images) 
+to a specified GeoJSON boundary and saves it as a GeoTIFF (.tiff).
+
+band_path: Path to the input .jp2 raster file (Sentinel-2 image).
+geojson_path: Path to the GeoJSON file containing the clipping boundary (AOI).
+target_dir (optional): Directory where the clipped .tiff file will be saved. Defaults to the same directory as band_path.
+driver_in="JP2OpenJPEG": Specifies the JPEG 2000 driver for reading .jp2 files.
+driver_out="GTiff": Specifies the GeoTIFF driver for saving the clipped raster.
+
+'''
+def clip_jp2_to_geojson(band_path, geojson_path, target_dir =None, driver_in = "JP2OpenJPEG",driver_out= "GTiff"):
+    if target_dir is None:
+        target_dir = band_path.parent
+    
+    # Load AOI (GeoJSON)
+    aoi = gpd.read_file(geojson_path)
+    
+    with rasterio.open(band_path, driver=driver_in) as src:
+        
+        # Convert GeoJSON CRS to match raster CRS
+        aoi = aoi.to_crs(src.crs)
+        # Extract geometry for masking
+        aoi_shape= [shape(aoi.geometry.loc[0])]
+        
+        # Clip raster to AOI
+        out_image, out_transform = rasterio.mask.mask(src, aoi_shape, crop=True)
+        out_meta = src.meta
+        
+    # Update metadata
+    out_meta.update(
+        {
+            "height":out_image.shape[1],
+            "width":out_image.shape[2],
+            "transform":out_transform,
+            "crs":src.crs,
+            "driver":driver_out,
+        }
+    )
+    
+    file_path_new = target_dir /f"{band_path.stem}_clipped.tiff"
+    # Save the clipped raster to a new GeoTiff file
+    with rasterio.open(file_path_new, "w", **out_meta) as dest:
+        dest.write(out_image)
+
+    print(f"Saved clipped file to {file_path_new}")
+
+    return str(file_path_new)
+
+
+
+'''
+This function normalizes a raster band (image array) to a range of 0 to 1 (or 0 to 255 if stretching is enabled).
+band: A NumPy array representing a raster band (e.g., Sentinel-2 image).
+stretch=True (default): If True, scales the output to 0-255 (8-bit image range).
+'''
+def normalize(band,stretch = True):
+    band_min , band_max = (band.min(),band.max())
+    
+    with np.errstate(divide="ignore", invalid="ignore"):
+        normalized_band = (band - band_min) / (band_max - band_min)
+    
+    '''
+    Handles Division by Zero Errors:
+    If band_max == band_min, this will prevent NaN or Inf values.
+    '''
+    if stretch:
+        normalized_band = normalized_band * 255
+    return normalized_band
+

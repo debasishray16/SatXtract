@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-import geopandas as geop
+import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
@@ -45,7 +45,7 @@ The function clip_to_json is designed to clip (crop) a raster image (e.g., a sat
 to a given GeoJSON boundary (e.g., a city's boundary or a region of interest). 
 It saves the clipped raster and returns the new file path.
 '''
-def clip_to_json(band_path, geojson_path, target_dir = None):
+def clip_to_geojson(band_path, geojson_path, target_dir = None):
     if target_dir is None:
         target_dir = band_path.parent
     

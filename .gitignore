@@ -1,6 +1,8 @@
 notebooks/cache/
 
 data/landsat/source/*.TIF
+data/landsat/source/*/*.JPEG
+data/landsat/output/*.JPEG
 data/landsat/output/*.TIF
 
 # data_preprocessing files

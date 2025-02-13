@@ -8,6 +8,15 @@ data/landcover_ai/images/*.TIF
 data/landcover_ai/masks/*.TIF
 data/landcover_ai/patches/images/*.TIF
 data/landcover_ai/patches/masks/*.TIF
+data/landcover_ai/patches/useful/images/*.TIF
+data/landcover_ai/patches/useful/masks/*.TIF
+
+data/landcover_ai/train_images/train/*.TIF
+data/landcover_ai/train_masks/train/*.TIF
+
+data/landcover_ai/val_images/val/*.TIF
+data/landcover_ai/val_masks/val/*.TIF
+
 
 temp/
 .directory
@@ -177,3 +186,4 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 data/landsat/output/*.tif
+*.tif

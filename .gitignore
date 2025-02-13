@@ -2,7 +2,7 @@ notebooks/cache/
 
 data/landsat/source/*.TIF
 data/landsat/output/*.TIF
-notebooks/*.ipynb
+
 
 
 temp/

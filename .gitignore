@@ -3,7 +3,11 @@ notebooks/cache/
 data/landsat/source/*.TIF
 data/landsat/output/*.TIF
 
-
+# data_preprocessing files
+data/landcover_ai/images/*.TIF
+data/landcover_ai/masks/*.TIF
+data/landcover_ai/patches/images/*.TIF
+data/landcover_ai/patches/masks/*.TIF
 
 temp/
 .directory

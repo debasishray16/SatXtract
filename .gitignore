@@ -2,8 +2,13 @@ notebooks/cache/
 
 data/landsat/source/*.TIF
 data/landsat/source/*/*.JPEG
+data/landsat/source/*.XML
+data/landsat/source/*/*.JSON
+
 data/landsat/output/*.JPEG
 data/landsat/output/*.TIF
+data/landsat/output/*.XML
+data/landsat/output/*.JSON
 
 # data_preprocessing files
 data/landcover_ai/images/*.TIF

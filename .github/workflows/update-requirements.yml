@@ -33,10 +33,11 @@ jobs:
       - name: Install updated packages (optional, for testing)
         run: pip install -r requirements.txt
 
-      - name: Commit changes
+      - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          github_token: ${{ secrets.TOKEN_COMMIT }}  # Use the PAT secret
           commit_message: "chore: Updated requirements.txt"
-          file_pattern: requirements.txt requirements.in # Include requirements.in if it exists
-          
+          file_pattern: requirements.txt
+          branch: ${{ github.ref }} # Push to the same branch that triggered the workflow
+          # OR, if you want to push to a specific branch (e.g., 'main'):
+          # branch: main

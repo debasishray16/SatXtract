@@ -36,6 +36,8 @@ jobs:
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: Updated requirements.txt"
-          file_pattern: requirements.txt
-          branch: main
+            commit_message: "chore: Updated requirements.txt"
+            file_pattern: requirements.txt
+            branch: update-requirements
+            create_branch: true
+            push_options: '--set-upstream origin update-requirements'

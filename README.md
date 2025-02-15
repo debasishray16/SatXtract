@@ -52,3 +52,35 @@ Includes LST(Land Surface Temperature), NDVI (Normalized Difference Vegetation I
 | LST (Land Surface Temperature)                | Remote sensing refers to the temperature of the Earth's surface as measured by satellite sensors. It is a crucial parameter for studying climate change, urban heat islands, and land-cover changes.                                                      |
 | NDVI (Normalized Difference Vegetation Index) | Remote sensing index to measure vegetation health and density. It helps differentiate healthy vegetation from bare soil, water bodies, and urban areas.                                                                                                   |
 | LSE (Land Surface Emissivity)                 | Efficiency with which the Earth's surface emits thermal infrared radiation. It is a critical parameter for accurate Land Surface Temperature (LST) estimation, as different land covers (vegetation, soil, water, urban areas) emit radiation differently |
+
+
+
+```py
+branca==0.6.0
+folium==0.14.0
+GDAL==3.4.1
+geopandas==0.13.0
+keras==2.13.1
+matplotlib==3.7.1
+numpy==1.23.5
+opencv_python==4.8.1.78
+opencv_python_headless==4.7.0.72
+pandas==2.0.2
+patchify==0.2.3
+Pillow==10.2.0
+pylandtemp==0.0.1a1
+pyproj==3.5.0
+rasterio==1.3.7
+scikit_learn==1.2.2
+scipy==1.11.3
+segment_geospatial==0.8.2
+segmentation_models==1.0.1
+Shapely==2.0.1
+split-folders==0.5.1
+streamlit==1.27.2
+streamlit_folium==0.12.0
+streamlit_image_comparison==0.0.4
+tensorflow==2.13.0
+tqdm==4.65.0
+
+```

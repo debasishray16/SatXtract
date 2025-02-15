@@ -36,5 +36,7 @@ jobs:
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
+          github_token: ${{ secrets.TOKEN_COMMIT }}  # Use the PAT secret
           commit_message: "chore: Updated requirements.txt"
+          file_pattern: requirements.txt requirements.in # Include requirements.in if it exists
           

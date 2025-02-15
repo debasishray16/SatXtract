@@ -38,6 +38,4 @@ jobs:
         with:
           commit_message: "chore: Updated requirements.txt"
           file_pattern: requirements.txt
-          branch: ${{ github.ref }} # Push to the same branch that triggered the workflow
-          # OR, if you want to push to a specific branch (e.g., 'main'):
-          # branch: main
+          branch: main

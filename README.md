@@ -20,8 +20,6 @@ As heat waves are likely to become more frequent, preventing and mitigating the 
 
 In this project , LANDSAT Satellite data is used. **Landsat 8-9 OLI/TIRS C2 L1**
 
-
-
 - The **dataset** I used for training is called **Landcover.ai**.
   - It is **publicly available** on [kaggle.com](https://www.kaggle.com/datasets/adrianboguszewski/landcoverai?resource=download) and consists of **40 high resolution labeled images**.
   - I broke those images down to about **40.000 patches of 256x256px** size.
@@ -53,8 +51,6 @@ Includes LST(Land Surface Temperature), NDVI (Normalized Difference Vegetation I
 | NDVI (Normalized Difference Vegetation Index) | Remote sensing index to measure vegetation health and density. It helps differentiate healthy vegetation from bare soil, water bodies, and urban areas.                                                                                                   |
 | LSE (Land Surface Emissivity)                 | Efficiency with which the Earth's surface emits thermal infrared radiation. It is a critical parameter for accurate Land Surface Temperature (LST) estimation, as different land covers (vegetation, soil, water, urban areas) emit radiation differently |
 
-
-
 ```py
 branca==0.6.0
 folium==0.14.0
@@ -85,10 +81,41 @@ tqdm==4.65.0
 
 ```
 
-
 ## Model Evaluation
 
 | Epoch_Trained | Location                                                                                                        | ipynb file                                                                                                   |
 |---------------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
 | 50            | [Model](/models/landcover_resnet50_50_epochs_batch16.hdf5) | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
 |               |                                                                                                                 |                                                                                                              |
+
+### Information
+
+If you want to add daat which is over 100 Mb, then you can use **Git LFS Storage**.
+
+1. First add the specific file in your project file.
+2. Then, copy the location of the file which is over 100 MB. Then, istall the git lfs by using command:
+
+```sh
+git lfs install
+```
+
+3. Identify the extension of the desired file.
+
+```sh
+# hdf5 file is over 125 mb
+git lfs track "*.hdf5"
+git add .gitattributes
+```
+
+4. Then, add the file location by using:
+
+```sh
+git add models/landcover_resnet50_50_epochs_batch16.hdf5
+```
+
+5. Push the file by using the following command from your local git repository.
+
+```sh
+git commit -m "Add model .hdf5 file"
+git push origin main --force
+```

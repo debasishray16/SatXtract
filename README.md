@@ -83,10 +83,11 @@ tqdm==4.65.0
 
 ## Model Evaluation
 
-| Epoch_Trained | Location                                                                                                        | ipynb file                                                                                                   |
-|---------------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| Epoch_Trained | Location | ipynb file|
+|---------------|----------|-----------|
 | 50            | [Model](/models/landcover_resnet50_50_epochs_batch16.hdf5) | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
-|               |                                                                                                                 |                                                                                                              |
+|100            |  [Model](/Urban-Heat-Island/models/landcover_resnet101_50_epochs_batch16.hdf5) |  [File](/Urban-Heat-Island/notebooks/segmentation_step_2_model_U_Net_resnet101_50.ipynb) |
+|75 |[Model]() |[File]() |
 
 ### Information
 

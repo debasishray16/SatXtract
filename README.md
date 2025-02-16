@@ -46,7 +46,7 @@ Includes LST(Land Surface Temperature), NDVI (Normalized Difference Vegetation I
 - Urban Heat Island Studies
 
 | Terms                                         | Meaning                                                                                                                                                                                                                                                   |
-|-----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | LST (Land Surface Temperature)                | Remote sensing refers to the temperature of the Earth's surface as measured by satellite sensors. It is a crucial parameter for studying climate change, urban heat islands, and land-cover changes.                                                      |
 | NDVI (Normalized Difference Vegetation Index) | Remote sensing index to measure vegetation health and density. It helps differentiate healthy vegetation from bare soil, water bodies, and urban areas.                                                                                                   |
 | LSE (Land Surface Emissivity)                 | Efficiency with which the Earth's surface emits thermal infrared radiation. It is a critical parameter for accurate Land Surface Temperature (LST) estimation, as different land covers (vegetation, soil, water, urban areas) emit radiation differently |
@@ -83,10 +83,10 @@ tqdm==4.65.0
 
 ## Model Evaluation
 
-| Epoch_Trained | Location                                                                                                        | ipynb file                                                                                                   |
-|---------------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| Epoch_Trained | Location                                                   | ipynb file                                              |
+| ------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
 | 50            | [Model](/models/landcover_resnet50_50_epochs_batch16.hdf5) | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
-|               |                                                                                                                 |                                                                                                              |
+|               |                                                            |                                                         |
 
 ### Information
 

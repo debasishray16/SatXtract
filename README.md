@@ -90,5 +90,5 @@ tqdm==4.65.0
 
 | Epoch_Trained | Location                                                                                                        | ipynb file                                                                                                   |
 |---------------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| 50            | ![Model](/models/landcover_resnet50_50_epochs_batch16.hdf5) | ![File](/notebooks/segmentation_step_2_model_test.ipynb) |
+| 50            | [Model](/models/landcover_resnet50_50_epochs_batch16.hdf5) | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
 |               |                                                                                                                 |                                                                                                              |

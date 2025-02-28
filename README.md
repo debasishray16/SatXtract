@@ -91,7 +91,7 @@ tqdm==4.65.0
 
 ### Information
 
-If you want to add daat which is over 100 Mb, then you can use **Git LFS Storage**.
+If you want to add data which is over 100 Mb, then you can use **Git LFS Storage**.
 
 1. First add the specific file in your project file.
 2. Then, copy the location of the file which is over 100 MB. Then, istall the git lfs by using command:

@@ -14,13 +14,15 @@ from folium.plugins import Draw
 from keras.models import load_model
 from PIL import Image
 from rasterio.io import MemoryFile
-from samgeo import tms_to_geotiff
+from samgeo import SamGeo, tms_to_geotiff, get_basemaps
 from streamlit_folium import st_folium
 from streamlit_image_comparison import image_comparison
 
 
 
 module_path = os.path.abspath(os.path.join("src"))
+
+
 if module_path not in sys.path:
     sys.path.append(module_path)
 
@@ -54,13 +56,10 @@ def load_model_from_file(model_path):
 
 
 
-
-
+"""Save a segmented image to a png file."""
 @st.cache_data
 def save_segmented_file(segmented_img, source_path, selected_model):
-    """
-    Save a segmented image to a png file.
-    """
+
     segmented_png_path = (
         source_path.parent.parent
         / "prediction"

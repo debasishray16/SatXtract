@@ -14,21 +14,17 @@ from streamlit_folium import st_folium
 def load_Raster(file_path):
     map_layer_array =  np.array(Image.open(file_path))
     
-    with open(
-        file_path.parent / f"{file_path.stem}_bounds.json", "r", encoding="utf-8"
-    ) as json_file:
+    with open(file_path.parent / f"{file_path.stem}_bounds.json", "r", encoding="utf-8") as json_file:
         map_layer_bounds = json.load(json_file)
 
     return map_layer_array, map_layer_bounds
 
 
-
+"""
+Create overlay layer for map.
+"""
 def create_overlay(file_path, map_object, name):
-    """
-    Create overlay layer for map.
-    """
-
-    map_layer_array, map_layer_bounds = load_raster(file_path)
+    map_layer_array, map_layer_bounds = load_Raster(file_path)
 
     folium.raster_layers.ImageOverlay(
         image=map_layer_array,
@@ -42,7 +38,7 @@ def create_map(raster_path, names):
     """
     Create map with overlay.
     """
-    _, map_layer_bounds = load_Raster(raster_path)
+    _ , map_layer_bounds = load_Raster(raster_path)
 
     # Calculate center of map
     center = [
@@ -62,10 +58,10 @@ def create_map(raster_path, names):
 
 
 
+"""
+Main function.
+"""
 def main():
-    """
-    Main function.
-    """
 
     st.title("Urban Heat Island Detector - Map examples")
 

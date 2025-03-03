@@ -83,15 +83,16 @@ tqdm==4.65.0
 
 ## Model Evaluation
 
-| Epoch_Trained | Location | ipynb file|
-|---------------|----------|-----------|
-| 50            | [Model](/models/landcover_resnet50_50_epochs_batch16.hdf5) | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
-|100            |  [Model](/models/landcover_resnet101_50_epochs_batch16.hdf5) |  [File](/notebooks/segmentation_step_2_model_U_Net_resnet101_50.ipynb) |
-|75 |[Model]() |[File]() |
+| Epoch | Model Location                                              | Notebook Location                                      |
+| ----- | ----------------------------------------------------------- | ------------------------------------------------------ |
+| 25    | [Model](/models/landcover_resnet50_25_epochs_batch16.hdf5)  | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
+| 50    | [Model](/models/landcover_resnet50_50_epochs_batch16.hdf5)  | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
+| 75    | [Model](/models/landcover_resnet50_75_epochs_batch16.hdf5)  | [File](/notebooks/segmentation_step_2_model_U_Net_resnet50_75.ipynb)|
+| 100   | [Model](/models/landcover_resnet50_100_epochs_batch16.hdf5) | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
 
 ### Information
 
-If you want to add daat which is over 100 Mb, then you can use **Git LFS Storage**.
+If you want to add data which is over 100 Mb, then you can use **Git LFS Storage**.
 
 1. First add the specific file in your project file.
 2. Then, copy the location of the file which is over 100 MB. Then, istall the git lfs by using command:

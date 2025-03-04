@@ -694,3 +694,7 @@ def prepare_split_image(img: np.ndarray, prediction: np.ndarray) -> tuple[Image.
     overlay = Image.alpha_composite(original_img, segmented_img)
 
     return original_img, segmented_img, overlay
+
+
+
+

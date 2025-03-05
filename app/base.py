@@ -192,7 +192,7 @@ def create_map(location, zoom_start=19):
     Returns:
         folium.Map: A Folium map object.
     """
-    m = folium.Map(location = location, zoom_start = zoom_start, control_scale=True)
+    m = folium.Map(location = location, zoom_start = zoom_start, control_scale=True, tiles="Esri.WorldImagery") #can use: OpenStreetMap
     Draw(export=True).add_to(m)  # Add drawing tools for user interaction
     return m
 
@@ -209,7 +209,7 @@ def tab_live_segmentation():
     """
     st.title("Live Segmentation")
 
-    col1, col2 = st.columns([0.2, 0.3])
+    col1, col2 = st.columns([0.1, 0.5])
     
     locations = {
         # Countries (Coordinates of the geographic center)
@@ -250,9 +250,7 @@ def tab_live_segmentation():
         # Display selected coordinates
         st.write("Selected Coordinates:", location)
 
-
-    with col2:
-        # Create a select box for the model
+                # Create a select box for the model
         selected_model = st.selectbox(
             "Model to use",
             MODELS.keys(),
@@ -260,11 +258,14 @@ def tab_live_segmentation():
             key="model_select_live",
         )
 
+    with col2:
+
+
         # Create Folium map
         folium_map = create_map(location, zoom_start=6)
 
         # Render map
-        output = st_folium(folium_map, width=800, height=500, on_change = callback, key="my_map")
+        output = st_folium(folium_map, width=805, height=805,on_change = callback, key="my_map")
 
         if output["all_drawings"] is not None:
             # Create image from bounding box

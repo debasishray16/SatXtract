@@ -121,3 +121,17 @@ git add models/landcover_resnet50_50_epochs_batch16.hdf5
 git commit -m "Add model .hdf5 file"
 git push origin main --force
 ```
+
+
+
+
+```bash
+pip install geemap
+
+# import ee
+# import geemap
+
+
+ee.Authenticate()
+ee.Initialize()
+```

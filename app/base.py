@@ -16,6 +16,9 @@ from samgeo import SamGeo, tms_to_geotiff, get_basemaps
 from streamlit_folium import st_folium
 from streamlit_image_comparison import image_comparison
 
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import cv2
 
 
 st.set_page_config(
@@ -33,7 +36,13 @@ from predict import get_smooth_prediction_for_file
 from utils import prepare_split_image
 
 
-
+CLASS_LABELS = {
+    0: ("Not classified", (255, 255, 255)),  # White
+    1: ("Buildings", (255, 0, 0)),           # Red
+    2: ("Greenery", (0, 255, 0)),               # Blue
+    3: ("Water", (0, 0, 255)),            # Green
+    4: ("Roads", (128, 128, 128)),           # Gray
+}
 
 
 
@@ -106,6 +115,8 @@ MODELS = {
         "file_name": "landcover_resnet101_100_epochs_batch16_freeze.hdf5",
         "backbone": "resnet101",
     },
+    
+
 }
 
 
@@ -132,7 +143,7 @@ def load_model_from_file(model_path):
         return None
     
     
-
+'''
 @st.cache_data
 def show_prediction(image_path, selected_model):
     """
@@ -160,11 +171,61 @@ def show_prediction(image_path, selected_model):
     save_segmented_file(segmented_img, image_path, selected_model)
 
     gc.collect()
-    return img, segmented_img, overlay
+    return img, segmented_img, overlay'''
 
 
+@st.cache_data
+def show_prediction(image_path, selected_model):
+    """
+    Get and show the prediction for a given image with class labels.
+    """
+    # Read image
+    with rasterio.open(image_path) as dataset:
+        img_array = dataset.read()
+
+    # Move channel information to third axis
+    img_array = np.moveaxis(img_array, source=0, destination=2)
+
+    # Load model
+    model = load_model_from_file(Path("data/models", MODELS[selected_model]["file_name"]))
+
+    # Get prediction
+    prediction = get_smooth_prediction_for_file(img_array, model, 5, MODELS[selected_model]["backbone"], patch_size=256)
+
+    # Convert prediction into a color-mapped image
+    color_mapped = np.zeros((*prediction.shape, 3), dtype=np.uint8)
+
+    for class_idx, (label, color) in CLASS_LABELS.items():
+        color_mapped[prediction == class_idx] = color
+
+    # Convert to PIL Image
+    segmented_img = Image.fromarray(color_mapped)
+
+    # Overlay segmentation on original image
+    overlay = cv2.addWeighted(img_array.astype(np.uint8), 0.6, color_mapped, 0.4, 0)
+
+    
+    
+    # Save segmented image
+    save_segmented_file(segmented_img, image_path, selected_model)
+
+    gc.collect()
+    return img_array, segmented_img, overlay
 
 
+def display_class_legend():
+    """
+    Display class labels and colors as a legend in Streamlit.
+    """
+    fig, ax = plt.subplots(figsize=(6, 1))
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_frame_on(False)
+
+    patches = [mpatches.Patch(color=np.array(color) / 255, label=label) for label, color in CLASS_LABELS.values()]
+    ax.legend(handles=patches, loc='center', ncol=len(CLASS_LABELS))
+
+    st.pyplot(fig)
 
 @st.cache_data
 def save_segmented_file(segmented_img, source_path, selected_model):
@@ -361,7 +422,7 @@ def tab_segmentation_from_file():
                 img_array, caption="Uploaded Image", use_container_width=True
             )
 
-            # Show a button to start the segmentation
+            '''# Show a button to start the segmentation
             if st.button("Segment", key="segment_button_file"):
                 
                 with st.spinner("Segmenting ..."):
@@ -370,7 +431,17 @@ def tab_segmentation_from_file():
                     # Show image comparison in placeholder container
                     with placeholder.container():
                         image_comparison(img1=img,img2=overlay)
-                        
+                        '''
+            
+            if st.button("Segment", key="segment_button_file"):
+                with st.spinner("Segmenting ..."):
+                    img, segmented_img, overlay = show_prediction(input_file_path, selected_model)
+
+                    with placeholder.container():
+                        image_comparison(img1=img, img2=overlay, width=700)
+
+                    # Show the class legend
+                    display_class_legend()
     with col3:
         st.write("")
 
@@ -472,6 +543,7 @@ def main():
 
     with tab2:
         tab_segmentation_from_file()
+
 
     with tab3:
         tab_show_examples()

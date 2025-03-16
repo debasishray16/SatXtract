@@ -30,6 +30,10 @@ temp/
 .pylintrc
 .streamlit/secrets.toml
 
+app/share/
+app/etc/
+app/Scripts/
+app/Lib/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

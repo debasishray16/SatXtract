@@ -135,3 +135,18 @@ pip install geemap
 ee.Authenticate()
 ee.Initialize()
 ```
+
+
+
+
+
+
+
+
+
+```bash
+/c/OSGeo4W/bin/python.exe -m streamlit run C:/Users/debas/UHI_Prediction/Urban-Heat-Island/app/base.py
+
+
+/c/OSGeo4W/bin/python.exe -m pip install scipy --no-warn-script-location
+```

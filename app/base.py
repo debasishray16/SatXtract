@@ -121,8 +121,13 @@ MODELS = {
 
 
 
+# API Key from Mapbox
+MAPBOX_URL = (
+    "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token="
+    + st.secrets["MAPBOX_API_KEY"]
+)
 
-
+st.write("Mapbox API Key Loaded Successfully!")
 
 
 @st.cache_resource
@@ -241,7 +246,7 @@ def save_segmented_file(segmented_img, source_path, selected_model):
 
     segmented_img.save(segmented_png_path)
 
-
+'''
 def create_map(location, zoom_start=19):
     """
     Creates a Folium map centered at a specific location.
@@ -256,7 +261,23 @@ def create_map(location, zoom_start=19):
     m = folium.Map(location = location, zoom_start = zoom_start, control_scale=True, tiles="Esri.WorldImagery") #can use: OpenStreetMap
     Draw(export=True).add_to(m)  # Add drawing tools for user interaction
     return m
+'''
 
+
+def create_map(location, zoom_start=18):
+    """
+    Create a Folium map with a satellite layer and a drawing tool.
+    """
+    # Create Folium map
+    folium_map = folium.Map(location=location, zoom_start=zoom_start, control_scale=True)
+
+    # Add the satellite layer
+    folium.TileLayer(MAPBOX_URL, attr="Mapbox").add_to(folium_map)
+
+    # Add drawing tool
+    Draw(export=True).add_to(folium_map)
+
+    return folium_map
 
 def callback():
     st.toast(f"Current zoom: {st.session_state['my_map']['zoom']}")

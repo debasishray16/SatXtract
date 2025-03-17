@@ -150,3 +150,16 @@ ee.Initialize()
 
 /c/OSGeo4W/bin/python.exe -m pip install scipy --no-warn-script-location
 ```
+
+
+```bash
+
+conda env config vars set GDAL_DATA="C:\Anaconda\envs\osgeo_env\Library\share\gdal"
+conda env config vars set PROJ_LIB="C:\Anaconda\envs\osgeo_env\Library\share\proj"
+conda activate osgeo_env
+# Check if they are set
+
+echo $GDAL_DATA
+echo $PROJ_LIB
+
+```

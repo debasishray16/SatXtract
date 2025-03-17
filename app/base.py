@@ -12,6 +12,7 @@ from folium.plugins import Draw
 from keras.models import load_model
 from PIL import Image
 from rasterio.io import MemoryFile
+from osgeo import gdal, osr
 from samgeo import SamGeo, tms_to_geotiff, get_basemaps
 from streamlit_folium import st_folium
 from streamlit_image_comparison import image_comparison
@@ -20,6 +21,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import cv2
 
+import os
+os.environ["GDAL_DATA"] = r"C:\Anaconda\envs\osgeo_env\Library\share\gdal"
+os.environ["PROJ_LIB"] = r"C:\Anaconda\envs\osgeo_env\Library\share\proj"
+from osgeo import gdal, osr
 
 st.set_page_config(
     page_title="SatXtract",
@@ -291,7 +296,7 @@ def tab_live_segmentation():
     """
     st.title("Live Segmentation")
 
-    col1, col2 = st.columns([0.1, 0.5])
+    col1, col2 = st.columns([0.5, 0.5])
     
     locations = {
         # Countries (Coordinates of the geographic center)
@@ -321,6 +326,7 @@ def tab_live_segmentation():
         "Pretoria": [-25.7461, 28.1881]
     }
 
+    placeholder = st.empty()
 
     with col1:
         # Dropdown for selecting a location
@@ -339,10 +345,11 @@ def tab_live_segmentation():
             format_func=lambda x: MODELS[x]["description"],
             key="model_select_live",
         )
+        
 
     with col2:
 
-
+        
         # Create Folium map
         folium_map = create_map(location, zoom_start=6)
 
@@ -380,6 +387,7 @@ def tab_live_segmentation():
                     )
 
                 # Check if image was created successfully and display it
+                
                 if Path(image_path).is_file():
                     placeholder.image(image_path, caption="Extracted image", width=700)
 
@@ -388,12 +396,14 @@ def tab_live_segmentation():
                         img, _, overlay = show_prediction(
                             Path(image_path), selected_model
                         )
+                        
+                        
 
                         # Show image comparison in placeholder container
                         with placeholder.container():
                             image_comparison(img1=img, img2=overlay, width=700)
 
-
+    
 
 
 
@@ -413,7 +423,66 @@ def tab_segmentation_from_file():
             key="model_select_file",
         )
 
+    
     with col2:
+        st.title("Segmentation from file")
+
+        with st.spinner("Loading ..."):
+            uploaded_file = st.file_uploader(
+                "Upload an image file to segment it:", type=["tif", "tiff", "jpg", "jpeg", "png"]
+            )
+
+        placeholder = st.empty()
+
+        if uploaded_file is not None:
+            try:
+                # Open the image from memory
+                with MemoryFile(uploaded_file.getvalue()) as memfile:
+                    with memfile.open() as dataset:
+                        img_array = dataset.read()
+                        img_meta = dataset.meta
+
+                # Define file path
+                output_dir = Path("data/predict/app/source")
+                output_dir.mkdir(parents=True, exist_ok=True)  # Create directory if not exists
+                input_file_path = output_dir / uploaded_file.name
+
+                # Convert PNG and JPEG to TIFF format since rasterio only supports TIFF
+                if uploaded_file.name.lower().endswith(("png", "jpg", "jpeg")):
+                    temp_tif_path = input_file_path.with_suffix(".tif")
+                    img = Image.open(uploaded_file)
+                    img = img.convert("RGB")
+                    img.save(temp_tif_path)
+                    input_file_path = temp_tif_path
+
+                # Save the image
+                with rasterio.open(input_file_path, "w", **img_meta) as dst:
+                    dst.write(img_array)
+
+                # Move channel information to third axis
+                img_array = np.moveaxis(img_array, source=0, destination=2)
+
+                # Display the image in the placeholder container
+                placeholder.image(img_array, caption="Uploaded Image", use_container_width=True)
+
+                # Show a button to start the segmentation
+                if st.button("Segment", key="segment_button_file"):
+                    with st.spinner("Segmenting ..."):
+                        try:
+                            img, segmented_img, overlay = show_prediction(input_file_path, selected_model)
+
+                            with placeholder.container():
+                                image_comparison(img1=img, img2=overlay, width=700)
+
+                            # Show the class legend
+                            display_class_legend()
+                        except Exception as e:
+                            st.error(f"Error during segmentation: {e}")
+
+            except Exception as e:
+                st.error(f"Error processing the uploaded file: {e}")
+
+    '''with col2:
         st.title("Segmentation from file")
 
         with st.spinner("Loading ..."):
@@ -443,16 +512,6 @@ def tab_segmentation_from_file():
                 img_array, caption="Uploaded Image", use_container_width=True
             )
 
-            '''# Show a button to start the segmentation
-            if st.button("Segment", key="segment_button_file"):
-                
-                with st.spinner("Segmenting ..."):
-                    img, _, overlay = show_prediction(input_file_path, selected_model)
-
-                    # Show image comparison in placeholder container
-                    with placeholder.container():
-                        image_comparison(img1=img,img2=overlay)
-                        '''
             
             if st.button("Segment", key="segment_button_file"):
                 with st.spinner("Segmenting ..."):
@@ -462,7 +521,7 @@ def tab_segmentation_from_file():
                         image_comparison(img1=img, img2=overlay, width=700)
 
                     # Show the class legend
-                    display_class_legend()
+                    display_class_legend()'''
     with col3:
         st.write("")
 

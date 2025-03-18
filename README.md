@@ -1,6 +1,9 @@
+[![GitHub contributors](https://badgen.net/github/contributors/debasishray16/SatXtract)](https://github.com/debasishray16/SatXtract/graphs/contributors) 
+[![Merged Pull Request](https://badgen.net/github/merged-prs/debasishray16/SatXtract)](https://github.com/debasishray16/SatXtract/pulls?q=is%3Apr+is%3Amerged)
+
 # Satellite Image Segmentation for LST, Emissivity, and NDVI Estimation Using U-Net and Interpolation Techniques
 
-## Stack Used:
+### Stack Used:
 
 
 

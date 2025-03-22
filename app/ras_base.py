@@ -3,8 +3,7 @@ import sys
 import time
 from pathlib import Path
 import gc
-import datetime
-import streamlit as st
+
 import folium
 import numpy as np
 import rasterio
@@ -13,19 +12,38 @@ from folium.plugins import Draw
 from keras.models import load_model
 from PIL import Image
 from rasterio.io import MemoryFile
-from osgeo import gdal, osr
 from samgeo import SamGeo, tms_to_geotiff, get_basemaps
 from streamlit_folium import st_folium
 from streamlit_image_comparison import image_comparison
-from datetime import datetime
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import cv2
 
-import os
-os.environ["GDAL_DATA"] = r"C:\Anaconda\envs\osgeo_env\Library\share\gdal"
-os.environ["PROJ_LIB"] = r"C:\Anaconda\envs\osgeo_env\Library\share\proj"
-from osgeo import gdal, osr
+import streamlit as st
+import folium
+import time
+from pathlib import Path
+import rasterio
+from rasterio.transform import from_bounds
+from rasterio.enums import Resampling
+import numpy as np
+from streamlit_folium import st_folium
+
+
+import streamlit as st
+import folium
+import requests
+import numpy as np
+import rasterio
+import time
+import mercantile
+from io import BytesIO
+from pathlib import Path
+from rasterio.transform import from_bounds
+from PIL import Image
+from streamlit_folium import st_folium
+
 
 st.set_page_config(
     page_title="SatXtract",
@@ -127,10 +145,8 @@ MODELS = {
 
 
 
-MAPBOX_URL = (
-    "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token="
-    + st.secrets["MAPBOX_API_KEY"]
-)
+# Load Mapbox API key
+MAPBOX_URL = st.secrets["MAPBOX_API_KEY"]
 
 st.write("Mapbox API Key Loaded Successfully!")
 
@@ -153,43 +169,42 @@ def load_model_from_file(model_path):
         return None
     
     
+'''
+@st.cache_data
+def show_prediction(image_path, selected_model):
+    """
+    Get and show the prediction for a given image.
+    """
+    # Read image
+    with rasterio.open(image_path) as dataset:
+        img_array = dataset.read()
 
-#@st.cache_data
-#def show_prediction(image_path, selected_model):
-#    """
-#    Get and show the prediction for a given image.
-#    """
-#    # Read image
-#    with rasterio.open(image_path) as dataset:
-#        img_array = dataset.read()
-#
-#    # Move channel information to third axis
-#    img_array = np.moveaxis(img_array, source=0, destination=2)
-#
-#    # Load model
-#    model = load_model_from_file(
-#        Path("data/models", MODELS[selected_model]["file_name"])
-#    )
-#
-#    # Get prediction
-#    prediction = get_smooth_prediction_for_file(img_array, model, 5, MODELS[selected_model]["backbone"], patch_size=256)
-#
-#    # Prepare images for visualization
-#    img, segmented_img, overlay = prepare_split_image(img_array, prediction)
-#
-#    # Save segmented image
-#    save_segmented_file(segmented_img, image_path, selected_model)
-#
-#   gc.collect()
-#    return img, segmented_img, overlay
+    # Move channel information to third axis
+    img_array = np.moveaxis(img_array, source=0, destination=2)
 
+    # Load model
+    model = load_model_from_file(
+        Path("data/models", MODELS[selected_model]["file_name"])
+    )
+
+    # Get prediction
+    prediction = get_smooth_prediction_for_file(img_array, model, 5, MODELS[selected_model]["backbone"], patch_size=256)
+
+    # Prepare images for visualization
+    img, segmented_img, overlay = prepare_split_image(img_array, prediction)
+
+    # Save segmented image
+    save_segmented_file(segmented_img, image_path, selected_model)
+
+    gc.collect()
+    return img, segmented_img, overlay'''
 
 
 @st.cache_data
 def show_prediction(image_path, selected_model):
-    #
-    # Get and show the prediction for a given image with class labels.
-    #
+    """
+    Get and show the prediction for a given image with class labels.
+    """
     # Read image
     with rasterio.open(image_path) as dataset:
         img_array = dataset.read()
@@ -223,32 +238,19 @@ def show_prediction(image_path, selected_model):
     gc.collect()
     return img_array, segmented_img, overlay
 
+
 def display_class_legend():
     """
-    Display class labels and colors in a horizontal row with white text on a transparent background.
+    Display class labels and colors as a legend in Streamlit.
     """
-    num_classes = len(CLASS_LABELS)
-    fig, ax = plt.subplots(figsize=(num_classes * 1.5, 0.5), facecolor="none")  # Transparent background
+    fig, ax = plt.subplots(figsize=(6, 1))
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_frame_on(False)
 
-    ax.axis("off")  # Hide axes
-
-    # Create patches for legend
     patches = [mpatches.Patch(color=np.array(color) / 255, label=label) for label, color in CLASS_LABELS.values()]
-    
-    # Create the legend
-    legend = ax.legend(
-        handles=patches,
-        loc="center",
-        ncol=num_classes,  # Ensures all labels are in one row
-        frameon=False,  # Removes border
-        bbox_to_anchor=(0.5, 1.1),  # Fine-tunes vertical position
-    )
+    ax.legend(handles=patches, loc='center', ncol=len(CLASS_LABELS))
 
-    # Make legend text white
-    for text in legend.get_texts():
-        text.set_color("white")
-
-    plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Ensure tight layout
     st.pyplot(fig)
 
 @st.cache_data
@@ -265,22 +267,22 @@ def save_segmented_file(segmented_img, source_path, selected_model):
 
     segmented_img.save(segmented_png_path)
 
-
-# def create_map(location, zoom_start=19):
-#     """
-#     Creates a Folium map centered at a specific location.
-#     
-#     Args:
-#         location (list): [latitude, longitude] of the center point.
-#         zoom_start (int): Zoom level for the map.
-#     
-#     Returns:
-#         folium.Map: A Folium map object.
-#     """
-#     m = folium.Map(location = location, zoom_start = zoom_start, control_scale=True, tiles="Esri.WorldImagery") #can use: OpenStreetMap
-#     Draw(export=True).add_to(m)  # Add drawing tools for user interaction
-#     return m
-# 
+'''
+def create_map(location, zoom_start=19):
+    """
+    Creates a Folium map centered at a specific location.
+    
+    Args:
+        location (list): [latitude, longitude] of the center point.
+        zoom_start (int): Zoom level for the map.
+    
+    Returns:
+        folium.Map: A Folium map object.
+    """
+    m = folium.Map(location = location, zoom_start = zoom_start, control_scale=True, tiles="Esri.WorldImagery") #can use: OpenStreetMap
+    Draw(export=True).add_to(m)  # Add drawing tools for user interaction
+    return m
+'''
 
 
 def create_map(location, zoom_start=18):
@@ -303,19 +305,100 @@ def callback():
     st.toast(f"Current center: {st.session_state['my_map']['center']}")
 
 
+# Function to fetch Mapbox tiles
+def fetch_mapbox_tile(x, y, z):
+    """Fetch a Mapbox satellite tile and return as an image."""
+    url = f"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token={MAPBOX_URL}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return Image.open(BytesIO(response.content))
+    else:
+        st.error(f"Error fetching tile {x},{y} at zoom {z}: {response.status_code}")
+        return None
+    
 
 
+# Function to get tile coordinates from lat/lon
+def get_tile_indices(lon_min, lat_min, lon_max, lat_max, zoom):
+    """Convert lat/lon bounding box to tile indices."""
+    tile1 = mercantile.tile(lon_min, lat_min, zoom)
+    tile2 = mercantile.tile(lon_max, lat_max, zoom)
+    return tile1.x, tile1.y, tile2.x, tile2.y
 
-def lst():
-    return None
+
+from PIL import Image
+import numpy as np
+from tqdm import tqdm  
+def stitch_tiles(x_min, y_min, x_max, y_max, zoom, tile_size=512):
+    """
+    Merge multiple tiles into a single stitched image.
+
+    Args:
+        x_min, y_min, x_max, y_max (int): Tile coordinates.
+        zoom (int): Zoom level.
+        tile_size (int, optional): Size of each tile (default is 512).
+
+    Returns:
+        PIL.Image: Stitched image of tiles.
+    """
+
+    # Ensure x_min < x_max and y_min < y_max
+    if x_min > x_max:
+        x_min, x_max = x_max, x_min
+    if y_min > y_max:
+        y_min, y_max = y_max, y_min
+
+    # Calculate width and height
+    width = (x_max - x_min + 1) * tile_size
+    height = (y_max - y_min + 1) * tile_size
+
+    # Validate dimensions
+    if width <= 0 or height <= 0:
+        raise ValueError(f"Invalid stitched image size: width={width}, height={height}")
+
+    stitched_image = Image.new("RGB", (width, height), (255, 255, 255))  # White background
+
+    # Fetch tiles
+    for x in range(x_min, x_max + 1):
+        for y in range(y_min, y_max + 1):
+            tile = fetch_mapbox_tile(x, y, zoom)
+            if tile:
+                stitched_image.paste(tile, ((x - x_min) * tile_size, (y - y_min) * tile_size))
+
+    return stitched_image
+
+from PIL import Image
+import numpy as np
+import rasterio
+
+def save_mapbox_geotiff(image_array, image_path, bbox):
+    """Save a NumPy image array as a GeoTIFF with bounding box coordinates."""
+    
+    # 🔹 Ensure `image_array` is a PIL Image before calling `.size`
+    if isinstance(image_array, np.ndarray):
+        image = Image.fromarray(image_array)  # Convert NumPy array to PIL Image
+    else:
+        image = image_array  # If already PIL Image, use as is
+
+    width, height = image.size  # ✅ Now `.size` will work correctly
+
+    transform = rasterio.transform.from_bounds(*bbox, width, height)
+
+    with rasterio.open(
+        image_path, "w", driver="GTiff", height=height, width=width,
+        count=3, dtype=image_array.dtype, transform=transform, crs="EPSG:4326"
+    ) as dst:
+        for i in range(3):  # Write RGB channels
+            dst.write(np.array(image)[:, :, i], i + 1)
+
 
 def tab_live_segmentation():
     """
     Streamlit app page to segment images directly from a map area.
     """
-    st.title("Live Segmentation from Map")
+    st.title("Live Segmentation")
 
-    col1, col2 ,col3 = st.columns([0.19, 0.6, 0.45])
+    col1, col2 = st.columns([0.1, 0.5])
     
     locations = {
         # Countries (Coordinates of the geographic center)
@@ -345,7 +428,6 @@ def tab_live_segmentation():
         "Pretoria": [-25.7461, 28.1881]
     }
 
-    
 
     with col1:
         # Dropdown for selecting a location
@@ -357,7 +439,7 @@ def tab_live_segmentation():
         # Display selected coordinates
         st.write("Selected Coordinates:", location)
 
-        #select box for the model
+                # Create a select box for the model
         selected_model = st.selectbox(
             "Model to use",
             MODELS.keys(),
@@ -365,26 +447,36 @@ def tab_live_segmentation():
             key="model_select_live",
         )
         
+        placeholder = st.empty()
 
     with col2:
 
-        
+
         # Create Folium map
         folium_map = create_map(location, zoom_start=6)
 
         # Render map
-        output = st_folium(folium_map, width=705, height=705,on_change = callback, key="my_map")
-        placeholder = st.empty()
-        
+        output = st_folium(folium_map, width=805, height=805,on_change = callback, key="my_map")
+
         if output["all_drawings"] is not None:
             # Create image from bounding box
-            if ( len(output["all_drawings"]) > 0 and output["all_drawings"][0]["geometry"]["type"] == "Polygon"):
+            if (
+                len(output["all_drawings"]) > 0
+                and output["all_drawings"][0]["geometry"]["type"] == "Polygon"
+            ):
                 with st.spinner("Extracting image..."):
                     # Get the bounding box of the drawn polygon
                     bbox = output["all_drawings"][0]["geometry"]["coordinates"][0]
 
                     # Convert for further use [xmin, ymin, xmax, ymax]
                     bbox = [bbox[0][0], bbox[0][1], bbox[2][0], bbox[2][1]]
+
+                    # Convert bounding box to tile indices
+                    zoom = 18  # Adjust for better resolution
+                    x_min, y_min, x_max, y_max = get_tile_indices(*bbox, zoom)
+
+                    # Fetch and stitch tiles
+                    stitched_image = stitch_tiles(x_min, y_min, x_max, y_max, zoom)
 
                     image_path = (
                         "data/predict/app/source/satellite-from-leafmap"
@@ -393,18 +485,21 @@ def tab_live_segmentation():
 
                     # Make sure image path exists
                     Path(image_path).parent.mkdir(parents=True, exist_ok=True)
-
-                    # Save the selection as a GeoTIFF
+                    
+                    # Simulate image data (Replace this with actual Mapbox tile fetching)
+                    image_array = np.random.randint(0, 255, (512, 512, 3), dtype=np.uint8)
+                    save_mapbox_geotiff(image_array, image_path, bbox)
+                    
+                    '''# Save the selection as a GeoTIFF
                     tms_to_geotiff(
                         output=image_path,
                         bbox=bbox,
                         zoom=18,
                         source=MAPBOX_URL,
                         overwrite=True,
-                    )
+                    )'''
 
                 # Check if image was created successfully and display it
-                
                 if Path(image_path).is_file():
                     placeholder.image(image_path, caption="Extracted image", width=700)
 
@@ -413,31 +508,12 @@ def tab_live_segmentation():
                         img, _, overlay = show_prediction(
                             Path(image_path), selected_model
                         )
-                        
-                        
 
                         # Show image comparison in placeholder container
                         with placeholder.container():
                             image_comparison(img1=img, img2=overlay, width=700)
-                            display_class_legend()
-                    
-    with col3:
-        if bbox is None:
-            st.write("Select the area:")
-        else:
-            st.write(bbox)
 
-        date_start , date_end = st.columns([0.5,0.5])
-        # Get today's date
-        today = datetime.today().date()
-        with date_start:
-            d = st.date_input("Start Date: ", value=None)
-        
-        with date_end:
-            d2 = st.date_input("End Date: ", value=None , max_value=today)
 
-        option = st.selectbox("Select UHI-Indices",
-        ("LST (Land Surface Temperature)", "NDVI (Natural Difference Vegetation Index)", "LSE(Land Surface Emissivity)"),)
 
 
 
@@ -457,66 +533,7 @@ def tab_segmentation_from_file():
             key="model_select_file",
         )
 
-    
     with col2:
-        st.title("Segmentation from file")
-
-        with st.spinner("Loading ..."):
-            uploaded_file = st.file_uploader(
-                "Upload an image file to segment it:", type=["tif", "tiff", "jpg", "jpeg", "png"]
-            )
-
-        placeholder = st.empty()
-
-        if uploaded_file is not None:
-            try:
-                # Open the image from memory
-                with MemoryFile(uploaded_file.getvalue()) as memfile:
-                    with memfile.open() as dataset:
-                        img_array = dataset.read()
-                        img_meta = dataset.meta
-
-                # Define file path
-                output_dir = Path("data/predict/app/source")
-                output_dir.mkdir(parents=True, exist_ok=True)  # Create directory if not exists
-                input_file_path = output_dir / uploaded_file.name
-
-                # Convert PNG and JPEG to TIFF format since rasterio only supports TIFF
-                if uploaded_file.name.lower().endswith(("png", "jpg", "jpeg")):
-                    temp_tif_path = input_file_path.with_suffix(".tif")
-                    img = Image.open(uploaded_file)
-                    img = img.convert("RGB")
-                    img.save(temp_tif_path)
-                    input_file_path = temp_tif_path
-
-                # Save the image
-                with rasterio.open(input_file_path, "w", **img_meta) as dst:
-                    dst.write(img_array)
-
-                # Move channel information to third axis
-                img_array = np.moveaxis(img_array, source=0, destination=2)
-
-                # Display the image in the placeholder container
-                placeholder.image(img_array, caption="Uploaded Image", use_container_width=True)
-
-                # Show a button to start the segmentation
-                if st.button("Segment", key="segment_button_file"):
-                    with st.spinner("Segmenting ..."):
-                        try:
-                            img, segmented_img, overlay = show_prediction(input_file_path, selected_model)
-
-                            with placeholder.container():
-                                image_comparison(img1=img, img2=overlay, width=700)
-
-                            # Show the class legend
-                            display_class_legend()
-                        except Exception as e:
-                            st.error(f"Error during segmentation: {e}")
-
-            except Exception as e:
-                st.error(f"Error processing the uploaded file: {e}")
-
-    '''with col2:
         st.title("Segmentation from file")
 
         with st.spinner("Loading ..."):
@@ -546,6 +563,16 @@ def tab_segmentation_from_file():
                 img_array, caption="Uploaded Image", use_container_width=True
             )
 
+            '''# Show a button to start the segmentation
+            if st.button("Segment", key="segment_button_file"):
+                
+                with st.spinner("Segmenting ..."):
+                    img, _, overlay = show_prediction(input_file_path, selected_model)
+
+                    # Show image comparison in placeholder container
+                    with placeholder.container():
+                        image_comparison(img1=img,img2=overlay)
+                        '''
             
             if st.button("Segment", key="segment_button_file"):
                 with st.spinner("Segmenting ..."):
@@ -555,7 +582,7 @@ def tab_segmentation_from_file():
                         image_comparison(img1=img, img2=overlay, width=700)
 
                     # Show the class legend
-                    display_class_legend()'''
+                    display_class_legend()
     with col3:
         st.write("")
 

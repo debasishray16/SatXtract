@@ -50,8 +50,7 @@ def initialize_gee(project_id):
         except Exception as e:
             st.error(f"Error during authentication: {e}")
 
-# Call the function
-initialize_gee('ee-dd7046')
+ee.Initialize(project='ee-debasishray864534')
 
 
 

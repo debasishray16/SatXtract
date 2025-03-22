@@ -25,8 +25,8 @@ streamlit_image_comparison==0.0.4
 tensorflow==2.13.0
 tqdm==4.65.0
 
-
-
+earthengine-api
+geemap
 
 ------
 pip install scipy==1.9.3

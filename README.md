@@ -171,8 +171,6 @@ ee.Initialize()
 
 
 
-
-
 ```bash
 /c/OSGeo4W/bin/python.exe -m streamlit run C:/Users/debas/UHI_Prediction/Urban-Heat-Island/app/base.py
 

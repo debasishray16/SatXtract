@@ -25,6 +25,12 @@ data/landcover_ai/val_images/val/*.TIF
 data/landcover_ai/val_masks/val/*.TIF
 
 
+app/data/models/*.hdf5
+app/data/predict/app/prediction/*.png
+
+
+models/*.hdf5
+
 temp/
 .directory
 .pylintrc

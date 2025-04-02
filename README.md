@@ -119,6 +119,7 @@ tqdm==4.65.0
 | 75    | [Model](/models/landcover_resnet50_75_epochs_batch16.hdf5)  | [File](/notebooks/segmentation_step_2_model_U_Net_resnet50_75.ipynb)|
 | 100   | [Model](/models/landcover_resnet50_100_epochs_batch16.hdf5) | [File](/notebooks/segmentation_step_2_model_test.ipynb) |
 
+**[Link to All used Models](https://huggingface.co/debasishray16/satellite_image_segmentation_ResNet_Models)**
 ### Information
 
 If you want to add data which is over 100 Mb, then you can use **Git LFS Storage**.
@@ -159,17 +160,9 @@ pip install geemap
 
 # import ee
 # import geemap
-
-
 ee.Authenticate()
 ee.Initialize()
 ```
-
-
-
-
-
-
 
 ```bash
 /c/OSGeo4W/bin/python.exe -m streamlit run C:/Users/debas/UHI_Prediction/Urban-Heat-Island/app/base.py
@@ -197,3 +190,4 @@ echo $PROJ_LIB
    <img src="https://contrib.rocks/image?repo=debasishray16/SatXtract" />
  </a>
 </div>
+

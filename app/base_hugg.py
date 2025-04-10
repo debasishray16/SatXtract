@@ -132,55 +132,25 @@ MAPBOX_URL = (
     + st.secrets["MAPBOX_API_KEY"]
 )
 
-st.write("Mapbox API Key Loaded Successfully!")
+st.info("Mapbox API Key Loaded Successfully!")
+
 
 
 @st.cache_resource
-def load_model_from_file(model_path):
-    """ Load a model from a file, ensuring it exists first. """
-    
-    model_file = Path(model_path)
-
-    if not model_file.exists():
-        st.error(f" Model file not found: {model_path}")
-        return None  # Prevents the app from crashing
-
+def load_model_from_huggingface(repo_id, filename):
     try:
+        from huggingface_hub import hf_hub_download
+
+        model_path = hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            cache_dir="data/models"
+        )
         model = load_model(model_path, compile=False)
         return model
     except Exception as e:
-        st.error(f" Error loading model: {e}")
+        st.error(f"Error loading model from Hugging Face: {e}")
         return None
-
-
-#@st.cache_data
-#def show_prediction(image_path, selected_model):
-#    """
-#    Get and show the prediction for a given image.
-#    """
-#    # Read image
-#    with rasterio.open(image_path) as dataset:
-#        img_array = dataset.read()
-#
-#    # Move channel information to third axis
-#    img_array = np.moveaxis(img_array, source=0, destination=2)
-#
-#    # Load model
-#    model = load_model_from_file(
-#        Path("data/models", MODELS[selected_model]["file_name"])
-#    )
-#
-#    # Get prediction
-#    prediction = get_smooth_prediction_for_file(img_array, model, 5, MODELS[selected_model]["backbone"], patch_size=256)
-#
-#    # Prepare images for visualization
-#    img, segmented_img, overlay = prepare_split_image(img_array, prediction)
-#
-#    # Save segmented image
-#    save_segmented_file(segmented_img, image_path, selected_model)
-#
-#   gc.collect()
-#    return img, segmented_img, overlay
 
 
 
@@ -197,8 +167,8 @@ def show_prediction(image_path, selected_model):
     img_array = np.moveaxis(img_array, source=0, destination=2)
 
     # Load model
-    model = load_model_from_file(Path("data/models", MODELS[selected_model]["file_name"]))
-
+    # model = load_model_from_file(Path("data/models", MODELS[selected_model]["file_name"]))
+    model = load_model_from_huggingface("debasishray16/satellite_image_segmentation_ResNet_Models", MODELS[selected_model]["file_name"])
 
 
     # Get prediction
@@ -265,23 +235,6 @@ def save_segmented_file(segmented_img, source_path, selected_model):
     Path(segmented_png_path).parent.mkdir(parents=True, exist_ok=True)
 
     segmented_img.save(segmented_png_path)
-
-
-# def create_map(location, zoom_start=19):
-#     """
-#     Creates a Folium map centered at a specific location.
-#     
-#     Args:
-#         location (list): [latitude, longitude] of the center point.
-#         zoom_start (int): Zoom level for the map.
-#     
-#     Returns:
-#         folium.Map: A Folium map object.
-#     """
-#     m = folium.Map(location = location, zoom_start = zoom_start, control_scale=True, tiles="Esri.WorldImagery") #can use: OpenStreetMap
-#     Draw(export=True).add_to(m)  # Add drawing tools for user interaction
-#     return m
-# 
 
 
 def create_map(location, zoom_start=18):
@@ -464,7 +417,7 @@ def tab_segmentation_from_file():
 
         with st.spinner("Loading ..."):
             uploaded_file = st.file_uploader(
-                "Upload an image file to segment it:", type=["tif", "tiff", "jpg", "jpeg", "png"]
+                "Upload", type=["tif", "tiff", "jpg", "jpeg", "png"]
             )
 
         placeholder = st.empty()
@@ -507,9 +460,8 @@ def tab_segmentation_from_file():
                             img, segmented_img, overlay = show_prediction(input_file_path, selected_model)
 
                             with placeholder.container():
-                                image_comparison(img1=img, img2=overlay, width=700)
+                                image_comparison(img1=img, img2=overlay, width=900 , label1="Original Image",label2="Segmented labels")
 
-                            # Show the class legend
                             display_class_legend()
                         except Exception as e:
                             st.error(f"Error during segmentation: {e}")
@@ -517,46 +469,6 @@ def tab_segmentation_from_file():
             except Exception as e:
                 st.error(f"Error processing the uploaded file: {e}")
 
-    '''with col2:
-        st.title("Segmentation from file")
-
-        with st.spinner("Loading ..."):
-            uploaded_file = st.file_uploader("Upload an image file to segment it:",type=["tif", "tiff", "jpg", "jpeg", "png"],)
-
-        placeholder = st.empty()
-
-        if uploaded_file is not None:
-            # Open the image from memory
-            with MemoryFile(uploaded_file.getvalue()) as memfile:
-                with memfile.open() as dataset:
-                    img_array = dataset.read()
-                    img_meta = dataset.meta
-
-            # Define file path
-            input_file_path = Path(f"data/predict/app/source/{uploaded_file.name}")
-
-            # Write the image to the directory
-            with rasterio.open(input_file_path, "w", **img_meta) as dst:
-                dst.write(img_array)
-
-            # Move channel information to third axis
-            img_array = np.moveaxis(img_array, source=0, destination=2)
-
-            # Display the image in the placeholder container
-            placeholder.image(
-                img_array, caption="Uploaded Image", use_container_width=True
-            )
-
-            
-            if st.button("Segment", key="segment_button_file"):
-                with st.spinner("Segmenting ..."):
-                    img, segmented_img, overlay = show_prediction(input_file_path, selected_model)
-
-                    with placeholder.container():
-                        image_comparison(img1=img, img2=overlay, width=700)
-
-                    # Show the class legend
-                    display_class_legend()'''
     with col3:
         st.write("")
         st.info("Upload satellite or aerial images (TIFF, PNG, JPG) for landcover segmentation.")
